@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OTA酒店用户需求分层深度分析报告</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-light: #ebf3ff;
+    --secondary: #f97316;
+    --secondary-light: #fff7ed;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --card-shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+    --border-radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; background: #f0f4f8; color: var(--gray-900); font-size: 14px; }
+
+  /* ── 顶部 Banner ── */
+  .report-header {
+    background: linear-gradient(135deg, #0f2d5a 0%, #1a56db 60%, #2563eb 100%);
+    color: #fff;
+    padding: 48px 48px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .report-header::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 340px; height: 340px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .report-header::after {
+    content: '';
+    position: absolute; bottom: -40px; right: 200px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .report-header .tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+  .report-header h1 { font-size: 30px; font-weight: 700; line-height: 1.3; margin-bottom: 10px; }
+  .report-header .subtitle { font-size: 15px; opacity: 0.8; margin-bottom: 24px; }
+  .header-meta { display: flex; gap: 32px; flex-wrap: wrap; }
+  .header-meta-item { font-size: 13px; opacity: 0.75; }
+  .header-meta-item strong { opacity: 1; font-weight: 600; }
+
+  /* ── 导航 TOC ── */
+  .toc-bar {
+    background: #fff;
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 48px;
+    display: flex;
+    gap: 0;
+    position: sticky; top: 0; z-index: 100;
+    overflow-x: auto;
+  }
+  .toc-item {
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+    white-space: nowrap;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    text-decoration: none;
+    transition: all .2s;
+  }
+  .toc-item:hover { color: var(--primary); border-bottom-color: var(--primary); }
+  .toc-item.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* ── 主容器 ── */
+  .main { max-width: 1280px; margin: 0 auto; padding: 32px 48px 60px; }
+
+  /* ── Section 标题 ── */
+  .section {
+    margin-bottom: 48px;
+  }
+  .section-title {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px;
+  }
+  .section-badge {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .badge-blue { background: var(--primary-light); color: var(--primary); }
+  .badge-orange { background: var(--secondary-light); color: var(--secondary); }
+  .badge-green { background: var(--success-light); color: var(--success); }
+  .section-title-text h2 { font-size: 20px; font-weight: 700; color: var(--gray-900); }
+  .section-title-text p { font-size: 13px; color: var(--gray-600); margin-top: 2px; }
+
+  /* ── 卡片 ── */
+  .card {
+    background: #fff;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 15px; font-weight: 600; color: var(--gray-900);
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .q-num {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .q-blue { background: var(--primary-light); color: var(--primary); }
+  .q-orange { background: var(--secondary-light); color: var(--secondary); }
+  .q-green { background: var(--success-light); color: var(--success); }
+  .card-desc { font-size: 12px; color: var(--gray-400); margin-bottom: 20px; }
+
+  /* ── Insight 条 ── */
+  .insight-bar {
+    background: var(--primary-light);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: var(--gray-700);
+    line-height: 1.6;
+  }
+  .insight-bar.orange { background: var(--secondary-light); border-color: var(--secondary); }
+  .insight-bar.green { background: var(--success-light); border-color: var(--success); }
+  .insight-bar.warning { background: var(--warning-light); border-color: var(--warning); }
+  .insight-bar strong { font-weight: 600; color: var(--gray-900); }
+
+  /* ── Grid 布局 ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+
+  /* ── KPI Stat ── */
+  .stat-group { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-card {
+    flex: 1; min-width: 140px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+  .stat-label { font-size: 12px; color: var(--gray-600); margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 700; color: var(--gray-900); line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+  .stat-card.highlight { background: var(--primary-light); border-color: #bfdbfe; }
+  .stat-card.highlight .stat-value { color: var(--primary); }
+  .stat-card.orange { background: var(--secondary-light); border-color: #fed7aa; }
+  .stat-card.orange .stat-value { color: var(--secondary); }
+  .stat-card.green { background: var(--success-light); border-color: #bbf7d0; }
+  .stat-card.green .stat-value { color: var(--success); }
+
+  /* ── 图表容器 ── */
+  .chart-box { width: 100%; }
+  .chart-box canvas, .chart-box > div { width: 100% !important; }
+
+  /* ── 数据表格 ── */
+  table.data-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    margin-top: 4px;
+  }
+  table.data-table th {
+    background: var(--gray-50); color: var(--gray-600);
+    font-weight: 600; font-size: 12px;
+    padding: 8px 12px; text-align: left;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  table.data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--gray-100);
+    color: var(--gray-700);
+  }
+  table.data-table tr:last-child td { border-bottom: none; }
+  table.data-table tr:hover td { background: var(--gray-50); }
+  table.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.data-table .highlight-row td { font-weight: 600; color: var(--primary); background: var(--primary-light) !important; }
+  table.data-table .total-row td { font-weight: 600; background: var(--gray-100) !important; border-top: 1px solid var(--gray-200); }
+
+  /* ── Progress Bar ── */
+  .progress-wrap { display: flex; align-items: center; gap: 10px; }
+  .progress-bar-bg {
+    flex: 1; height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden;
+  }
+  .progress-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+  .fill-blue { background: var(--primary); }
+  .fill-orange { background: var(--secondary); }
+  .fill-green { background: var(--success); }
+  .fill-gray { background: var(--gray-400); }
+  .fill-purple { background: #7c3aed; }
+  .progress-pct { font-size: 12px; font-weight: 600; color: var(--gray-700); min-width: 38px; text-align: right; }
+
+  /* ── Tag ── */
+  .tag-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px; font-weight: 600;
+  }
+  .tag-blue { background: var(--primary-light); color: var(--primary); }
+  .tag-orange { background: var(--secondary-light); color: var(--secondary); }
+  .tag-green { background: var(--success-light); color: var(--success); }
+  .tag-gray { background: var(--gray-100); color: var(--gray-600); }
+  .tag-red { background: #fef2f2; color: #dc2626; }
+
+  /* ── 分隔线 ── */
+  .divider { border: none; border-top: 1px solid var(--gray-200); margin: 24px 0; }
+
+  /* ── Summary Box ── */
+  .summary-box {
+    background: linear-gradient(135deg, #0f2d5a 0%, #1a56db 100%);
+    color: #fff;
+    border-radius: var(--border-radius);
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+  .summary-box h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+  .summary-box ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .summary-box li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.6; opacity: 0.92; }
+  .summary-box li::before { content: '→'; flex-shrink: 0; margin-top: 1px; opacity: 0.7; }
+  .summary-box.orange { background: linear-gradient(135deg, #7c2d12 0%, #f97316 100%); }
+  .summary-box.green { background: linear-gradient(135deg, #14532d 0%, #16a34a 100%); }
+
+  /* ── 需求场景小标签 ── */
+  .scene-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 16px;
+    font-size: 12px; font-weight: 500;
+    margin: 3px;
+  }
+  .scene-work { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .scene-weekend { background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+  .scene-holiday { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+
+  /* 响应式 */
+  @media (max-width: 900px) {
+    .main { padding: 20px 16px 40px; }
+    .report-header { padding: 32px 20px 28px; }
+    .toc-bar { padding: 0 12px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .stat-group { gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================== HEADER ============================== -->
+<div class="report-header">
+  <div class="tag">OTA酒店业务 · 用户需求分层分析</div>
+  <h1>25年用户需求场景深度分析报告</h1>
+  <p class="subtitle">聚焦商旅复用型 · 周末微度假型 · 节假日爆发型三大人群画像与平台策略洞察</p>
+</div>
+
+<!-- ============================== TOC ============================== -->
+<div class="toc-bar">
+  <a class="toc-item active" href="#sec1">一、非单次纯商旅用户</a>
+  <a class="toc-item" href="#sec2">二、单次纯商旅用户</a>
+  <a class="toc-item" href="#sec3">三、非单次纯周末用户</a>
+</div>
+
+<!-- ============================== MAIN ============================== -->
+<div class="main">
+
+<!-- ====== SECTION 1 ====== -->
+<div class="section" id="sec1">
+  <div class="section-title">
+    <div class="section-badge badge-blue">💼</div>
+    <div class="section-title-text">
+      <h2>一、25年全年非单次需求的纯商旅复用型用户</h2>
+      <p>定义：工作日入住需求占比 ≥70%，且当年入住次数 ≥2次的纯场景用户</p>
+    </div>
+  </div>
+
+  <!-- Q1 -->
+  <div class="card">
+    <div class="card-title">
+      <span class="q-num q-blue">Q1</span>
+      这部分用户往年的用户类型是什么样的？是一直商旅吗？还是从其他类型转化过来的？
+    </div>
+    <div class="card-desc">数据来源：25年非单纯商旅用户在各年份的需求类型分布（含2023-2026）</div>
+
+    <div class="insight-bar">
+      <strong>核心结论：</strong>这批商旅用户并非"天生商旅"——在23/24年，约50%才被识别为商旅型，另有30%是复合场景用户、17%是周末/节假日型用户。25年后才100%收敛为纯商旅型，说明这是一批<strong>需求固化的用户</strong>，而非历史一直如此。
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:12px;">历年需求类型分布（用户数）</p>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>需求类型</th>
+              <th class="num">2023</th>
+              <th class="num">2024</th>
+              <th class="num">2025</th>
+              <th class="num">2026</th>
+              <th class="num">总计</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight-row">
+              <td>商旅复用型</td>
+              <td class="num">804,156</td>
+              <td class="num">1,039,970</td>
+              <td class="num">4,291,554</td>
+              <td class="num">712,069</td>
+              <td class="num">10,258,143</td>
+            </tr>
+            <tr>
+              <td>周末微度假型</td>
+              <td class="num">285,744</td>
+              <td class="num">316,347</td>
+              <td class="num">—</td>
+              <td class="num">237,591</td>
+              <td class="num">845,754</td>
+            </tr>
+            <tr>
+              <td>节假日爆发型</td>
+              <td class="num">73,813</td>
+              <td class="num">87,620</td>
+              <td class="num">—</td>
+              <td class="num">139,559</td>
+              <td class="num">301,872</td>
+            </tr>
+            <tr>
+              <td>复合场景用户</td>
+              <td class="num">501,871</td>
+              <td class="num">636,295</td>
+              <td class="num">—</td>
+              <td class="num">324,437</td>
+              <td class="num">2,336,811</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:12px;">各年度用户类型结构占比</p>
+        <div id="chart_q1_type" style="height:220px;"></div>
+      </div>
+    </div>
+
+    <div class="insight-bar" style="margin-top:16px;margin-bottom:0;">
+      <strong>关键发现：</strong>
+      在23年和24年，<strong>约30%</strong>的这批用户是复合场景用户（周末+工作日皆有），<strong>17-21%</strong>是周末/节假日型。
+      到26年（截至当前），商旅占比仍只有50%，说明<strong>每年仍有约一半用户在商旅之外有非工作日需求</strong>，只是25年这一年集中爆发了工作日行为。
+      这也意味着该群体存在相当大比例的<strong>"潜在休闲需求"</strong>，有激活空间。
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="card">
+    <div class="card-title">
+      <span class="q-num q-blue">Q2</span>
+      这部分用户有没有节假日/周末需求？各年份需求场景占比 + 25年节假日/周末的搜索行为
+    </div>
+    <div class="card-desc">数据来源：历年需求次数分布 + 25年12月搜索行为（因清洗问题仅看12月）</div>
+
+    <div class="insight-bar">
+      <strong>核心结论：</strong>商旅用户<strong>实际有非工作日需求</strong>，但在25年这一年内工作日占比被压缩到100%（定义所致）。看历史需求：23-24年周末占26-28%、节假日占8%；看26年搜索行为：周末搜索占24%、节假日占13%。<strong>平台有漏接的休闲需求。</strong>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:12px;">历年需求场景占比趋势</p>
+        <div id="chart_q2_scene" style="height:240px;"></div>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:12px;">25年12月搜索行为场景分布（仅供参考）</p>
+        <div class="stat-group" style="margin-bottom:12px;">
+          <div class="stat-card highlight" style="min-width:100px;text-align:center;">
+            <div class="stat-label">工作日搜索</div>
+            <div class="stat-value" style="font-size:28px;">68%</div>
+            <div class="stat-sub">1,539,781人</div>
+          </div>
+          <div class="stat-card" style="min-width:100px;text-align:center;background:#fdf4ff;border-color:#e9d5ff;">
+            <div class="stat-label">周末搜索</div>
+            <div class="stat-value" style="font-size:28px;color:#7e22ce;">27%</div>
+            <div class="stat-sub">615,852人</div>
+          </div>
+          <div class="stat-card orange" style="min-width:100px;text-align:center;">
+            <div class="stat-label">节假日搜索</div>
+            <div class="stat-value" style="font-size:28px;">4%</div>
+            <div class="stat-sub">94,102人</div>
+          </div>
+        </div>
+        <div class="insight-bar warning" style="margin-bottom:0;">
+          即使是纯商旅用户，<strong>27%的人在12月依然搜索周末入住酒店</strong>，说明周末需求客观存在，只是转化不足。节假日搜索仅4%，可能是平台价格/库存不满足预期。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="card">
+    <div class="card-title">
+      <span class="q-num q-blue">Q3</span>
+      这部分用户比价行为明显吗？—— 压屏行为分析
+    </div>
+    <div class="card-desc">数据来源：25年12月有压屏行为的纯商旅非单次用户</div>
+
+    <div class="insight-bar">
+      <strong>核心结论：</strong>商旅用户压屏频率<strong>低于节假日/周末型用户</strong>，人均月压屏4.0次、日均2.4次。相对而言比价倾向最弱，符合商旅高频、决策快、对价格敏感度相对低的特征。
+    </div>
+
+    <div class="grid-3">
+      <div class="stat-card" style="text-align:center;">
+        <div class="tag-badge tag-blue" style="margin-bottom:8px;">节假日爆发型</div>
+        <div class="stat-value" style="font-size:32px;color:var(--danger);">4.8</div>
+        <div class="stat-sub">人均月压屏次数</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--gray-600);">日均 3.0次｜16,627人</div>
+      </div>
+      <div class="stat-card" style="text-align:center;background:#fdf4ff;border-color:#e9d5ff;">
+        <div class="tag-badge" style="background:#fdf4ff;color:#7e22ce;border:1px solid #e9d5ff;margin-bottom:8px;">周末微度假型</div>
+        <div class="stat-value" style="font-size:32px;color:#7e22ce;">4.6</div>
+        <div class="stat-sub">人均月压屏次数</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--gray-600);">日均 2.7次｜214,954人</div>
+      </div>
+      <div class="stat-card highlight" style="text-align:center;">
+        <div class="tag-badge tag-blue" style="margin-bottom:8px;">商旅复用型</div>
+        <div class="stat-value" style="font-size:32px;">4.0</div>
+        <div class="stat-sub">人均月压屏次数</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--gray-600);">日均 2.4次｜696,860人</div>
+      </div>
+    </div>
+
+    <div id="chart_q3_yaping" style="height:180px; margin-top:16px;"></div>
+
+    <div class="insight-bar" style="margin-top:16px;margin-bottom:0;">
+      <strong>业务含义：</strong>商旅用户压屏次数最少，说明其<strong>决策链路较短、目标明确</strong>（常去目的地/固定酒店偏好）。但仍有4.0次/月的压屏行为，提示价格仍是考量因素。
+      可以针对商旅用户主推<strong>协议价/企业价/连住优惠</strong>，减少压屏摩擦，提升转化效率。
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="card">
+    <div class="card-title">
+      <span class="q-num q-blue">Q4</span>
+      常住地是否以大城市为主？单用户城市/POI 选择是否有规律？
+    </div>
+    <div class="card-desc">数据来源：25年非单纯商旅用户常住地分布 + 23-26年订单酒店城市/商圈类型分布</div>
+
+    <div class="grid-2" style="margin-bottom:20px;">
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:10px;">常住地城市线级分布</p>
+        <div id="chart_q4_city_level" style="height:220px;"></div>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:10px;">住店城市TOP10（工作日入住）</p>
+        <table class="data-table">
+          <thead><tr><th>城市</th><th class="num">订单量</th><th class="num">占比</th></tr></thead>
+          <tbody>
+            <tr><td>深圳市</td><td class="num">1,338,374</td><td class="num">3.51%</td></tr>
+            <tr><td>广州市</td><td class="num">1,297,010</td><td class="num">3.40%</td></tr>
+            <tr><td>成都市</td><td class="num">1,267,244</td><td class="num">3.32%</td></tr>
+            <tr><td>上海市</td><td class="num">1,119,653</td><td class="num">2.94%</td></tr>
+            <tr><td>重庆市</td><td class="num">1,114,886</td><td class="num">2.92%</td></tr>
+            <tr><td>北京市</td><td class="num">1,070,922</td><td class="num">2.81%</td></tr>
+            <tr><td>东莞市</td><td class="num">796,215</td><td class="num">2.09%</td></tr>
+            <tr><td>西安市</td><td class="num">749,169</td><td class="num">1.96%</td></tr>
+            <tr><td>杭州市</td><td class="num">737,260</td><td class="num">1.93%</td></tr>
+            <tr><td>长沙市</td><td class="num">712,203</td><td class="num">1.87%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="insight-bar" style="margin-bottom:16px;">
+      <strong>常住地结论：</strong>商旅用户常住地<strong>并非集中在一线城市</strong>（仅占11.74%），新一线+二线合计占42.5%，三线及以下占45.8%。说明商旅需求<strong>下沉城市同样活跃</strong>，非典型"大城市白领"画像。
+      常住地TOP是郑州、广州、深圳，而非北京、上海，反映了制造业/贸易型商旅需求的地域特征。
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:10px;">住店商圈类型分布（工作日 vs 周末）</p>
+        <table class="data-table">
+          <thead><tr><th>商圈类型</th><th class="num">工作日</th><th class="num">周末</th><th class="num">节假日</th></tr></thead>
+          <tbody>
+            <tr class="highlight-row"><td>火车站</td><td class="num">17.8%</td><td class="num">17.7%</td><td class="num">17.6%</td></tr>
+            <tr class="highlight-row"><td>商业办公</td><td class="num">15.1%</td><td class="num">15.2%</td><td class="num">14.6%</td></tr>
+            <tr><td>广场商圈</td><td class="num">11.2%</td><td class="num">11.3%</td><td class="num">10.6%</td></tr>
+            <tr><td>公园景点</td><td class="num">9.3%</td><td class="num">9.1%</td><td class="num">9.0%</td></tr>
+            <tr><td>大学</td><td class="num">5.5%</td><td class="num">5.8%</td><td class="num">5.4%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:10px;">单用户城市复购数（订单数/城市数）</p>
+        <table class="data-table">
+          <thead><tr><th>商圈类型</th><th class="num">工作日</th><th class="num">周末</th><th class="num">节假日</th></tr></thead>
+          <tbody>
+            <tr class="highlight-row"><td>商业办公</td><td class="num">2.14</td><td class="num">1.61</td><td class="num">1.34</td></tr>
+            <tr class="highlight-row"><td>火车站</td><td class="num">1.97</td><td class="num">1.53</td><td class="num">1.30</td></tr>
+            <tr><td>广场商圈</td><td class="num">2.05</td><td class="num">1.57</td><td class="num">1.31</td></tr>
+            <tr><td>度假区</td><td class="num">1.97</td><td class="num">1.57</td><td class="num">1.30</td></tr>
+            <tr><td><strong>总计</strong></td><td class="num"><strong>1.99</strong></td><td class="num"><strong>1.54</strong></td><td class="num"><strong>1.30</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="insight-bar" style="margin-bottom:0;">
+      <strong>POI规律结论：</strong>工作日住店集中在<strong>火车站（17.8%）和商业办公（15.1%）</strong>商圈，且工作日单城市复购率最高（商业办公2.14次/城市），说明商旅用户在特定城市<strong>有高度重复的固定出行路线</strong>。
+      周末/节假日的复购率明显下降（总计1.54/1.30），说明周末偶发、目的地分散，与工作日出行规律形成鲜明对比。
+      <strong>策略建议：</strong>针对商旅常驻城市+火车站/商圈酒店，推送"常驻会员价"或"出差套餐"，提升钱包份额。
+    </div>
+  </div>
+
+  <!-- Section1 Summary -->
+  <div class="summary-box">
+    <h3>📋 非单次纯商旅用户综合洞察</h3>
+    <ul>
+      <li>用户类型并非固化：23-24年有50%被分为非商旅型，25年才完全收敛，说明该群体是<strong>需求阶段性集中</strong>，而非永久属性；</li>
+      <li>周末/节假日需求客观存在：12月仍有27%搜索周末入住，历史周末需求占26-28%，是<strong>平台可以争抢的增量机会</strong>；</li>
+      <li>比价行为相对温和：月均压屏4次，低于休闲型用户，决策效率高，适合推"免比价"权益包；</li>
+      <li>地理规律强：集中在火车站+商业办公商圈，单城市复购2.14次，<strong>固定路线协议价 / 常客返点</strong>是最直接的钱包份额策略。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ====== SECTION 2 ====== -->
+<div class="section" id="sec2">
+  <div class="section-title">
+    <div class="section-badge badge-orange">🧳</div>
+    <div class="section-title-text">
+      <h2>二、25年单次需求的纯商旅用户</h2>
+      <p>定义：工作日入住需求占比 ≥70%，且当年仅有1次需求的单次场景用户</p>
+    </div>
+  </div>
+
+  <!-- Q1 -->
+  <div class="card">
+    <div class="card-title">
+      <span class="q-num q-orange">Q1</span>
+      这部分用户平均间夜量是多少？
+    </div>
+
+    <div class="stat-group">
+      <div class="stat-card orange" style="text-align:center;flex:0 0 200px;">
+        <div class="stat-label">需求平均间夜数</div>
+        <div class="stat-value" style="font-size:52px;">1.5</div>
+        <div class="stat-sub">间夜/次</div>
+      </div>
+      <div style="flex:1;display:flex;align-items:center;">
+        <div class="insight-bar orange" style="margin-bottom:0;">
+          单次商旅用户平均间夜 <strong>1.5间夜</strong>，属于典型的<strong>短途/单次出差</strong>形态（通常为1-2晚）。
+          说明该群体以<strong>城市间快速往返出差</strong>为主，而非长期驻外。
+          这类用户出行规律性低，难以预判复购时间，但一旦下次再出差，依然有潜在需求。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="card">
+    <div class="card-title">
+      <span class="q-num q-orange">Q2</span>
+      唯一的一单以后，还有回访吗？回访需求是工作日 / 周末 / 节假日？
+    </div>
+    <div class="card-desc">数据来源：25年单次需求商旅用户离店后回访行为 + 12月搜索场景</div>
+
+    <div class="insight-bar orange">
+      <strong>核心结论：</strong>约 <strong>49.3%</strong> 的用户在消费后有回访行为，其中 <strong>35.4%</strong> 在7日内首次回访，<strong>59.1%</strong> 在1月内回访——说明这批"单次商旅"并非真正流失，<strong>近一半是潜在高频用户</strong>，需在离店后的黄金窗口期主动触达。
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:10px;">离店后回访天数分布</p>
+        <div id="chart_q2_revisit" style="height:220px;"></div>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:10px;">回访用户首次回访时间分布（累计）</p>
+        <div class="stat-group" style="flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+          <div class="stat-card" style="text-align:center;min-width:100px;">
+            <div class="stat-label">7日内</div>
+            <div class="stat-value" style="color:var(--secondary);font-size:24px;">35.4%</div>
+          </div>
+          <div class="stat-card" style="text-align:center;min-width:100px;">
+            <div class="stat-label">1月内</div>
+            <div class="stat-value" style="color:var(--secondary);font-size:24px;">59.1%</div>
+          </div>
+          <div class="stat-card" style="text-align:center;min-width:100px;">
+            <div class="stat-label">2月内</div>
+            <div class="stat-value" style="color:var(--secondary);font-size:24px;">73.0%</div>
+          </div>
+          <div class="stat-card" style="text-align:center;min-width:100px;">
+            <div class="stat-label">4月内</div>
+            <div class="stat-value" style="color:var(--secondary);font-size:24px;">87.5%</div>
+          </div>
+        </div>
+        <div id="chart_q2_revisit_cum" style="height:150px;"></div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:12px;">12月回访用户搜索场景分布</p>
+    <div class="grid-3">
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--primary-light);border-radius:8px;">
+          <span style="font-size:28px;">💼</span>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);">工作日搜索</div>
+            <div style="font-size:28px;font-weight:700;color:var(--primary);">65%</div>
+            <div style="font-size:12px;color:var(--gray-400);">1,743,297人</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;background:#fdf4ff;border-radius:8px;">
+          <span style="font-size:28px;">🏖️</span>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);">周末搜索</div>
+            <div style="font-size:28px;font-weight:700;color:#7e22ce;">29%</div>
+            <div style="font-size:12px;color:var(--gray-400);">781,478人</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--secondary-light);border-radius:8px;">
+          <span style="font-size:28px;">🎉</span>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);">节假日搜索</div>
+            <div style="font-size:28px;font-weight:700;color:var(--secondary);">5%</div>
+            <div style="font-size:12px;color:var(--gray-400);">138,008人</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-bar orange" style="margin-top:16px;margin-bottom:0;">
+      回访搜索仍以工作日为主（65%），但有<strong>29%搜索周末入住</strong>——说明这批"单次商旅"在回访时存在休闲需求的切换，是跨场景激活的入口。
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="card">
+    <div class="card-title">
+      <span class="q-num q-orange">Q3</span>
+      实际需求是否有工作日和周末连在一起（周五出发/周一离店）？
+    </div>
+
+    <div class="insight-bar orange">
+      <strong>核心结论：</strong>绝大多数单次商旅需求（<strong>92%</strong>）是纯工作日出行，不涉及周末延住；仅 <strong>8%</strong> 的需求连住至周末，说明"商务延假"场景规模有限但存在。
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div id="chart_q3_extend" style="height:220px;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:16px;">
+        <div class="stat-card" style="text-align:center;">
+          <div class="stat-label">未连住至周末</div>
+          <div class="stat-value" style="font-size:36px;color:var(--gray-600);">92%</div>
+          <div class="stat-sub">15,396,324次需求</div>
+        </div>
+        <div class="stat-card orange" style="text-align:center;">
+          <div class="stat-label">连住至周末</div>
+          <div class="stat-value" style="font-size:36px;">8%</div>
+          <div class="stat-sub">1,368,996次需求</div>
+        </div>
+        <div class="insight-bar orange" style="margin-bottom:0;font-size:12px;">
+          8%约137万次需求，绝对量不小。可针对<strong>周四/周五入住</strong>的商旅用户推送"延住周末享X折"的场景券，低成本激活这批用户的休闲潜力。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section2 Summary -->
+  <div class="summary-box orange">
+    <h3>📋 单次纯商旅用户综合洞察</h3>
+    <ul>
+      <li>单次出行平均1.5间夜，是<strong>短途快速出差</strong>画像；但近50%会回访，且60%在1月内回访，说明<strong>不是沉默用户，而是待唤醒用户</strong>；</li>
+      <li>回访窗口期关键：7日内回访比例高达35.4%，离店后7日是<strong>Push/短信触达的黄金窗口</strong>；</li>
+      <li>回访时有29%搜索周末，是<strong>跨场景培育的天然入口</strong>——在工作日出差后推周末附近城市"顺带游"；</li>
+      <li>92%不连住至周末，但8%有延住行为，可用<strong>"延住优惠券"</strong>低成本激活。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ====== SECTION 3 ====== -->
+<div class="section" id="sec3">
+  <div class="section-title">
+    <div class="section-badge badge-green">🏖️</div>
+    <div class="section-title-text">
+      <h2>三、25年非单次需求的纯周末用户</h2>
+      <p>定义：周末入住需求占比 ≥65%，且当年入住次数 ≥2次的纯场景用户</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="q-num q-green">核心问题</span>
+      周末微度假用户为什么没有节假日订单？是真没需求还是平台没抓住？（有过节假日搜索行为吗？）
+    </div>
+    <div class="card-desc">数据来源：25年12月有搜索入离的纯周末非单次用户行为分布</div>
+
+    <div class="insight-bar green">
+      <strong>核心结论：</strong>纯周末用户<strong>确实有节假日搜索行为</strong>（占6%，约46,102人）——说明节假日需求不是"没有"，而是<strong>平台转化存在问题</strong>（可能是价格过高、房源不足或搜索后流失）。真正"没有节假日需求"的用户是少数。
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <p style="font-size:13px;font-weight:600;color:var(--gray-600);margin-bottom:12px;">25年12月搜索行为场景分布</p>
+        <div id="chart_sec3_scene" style="height:240px;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:14px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--success-light);border-radius:8px;">
+          <span style="font-size:28px;">🏖️</span>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);">周末搜索（主需求）</div>
+            <div style="font-size:28px;font-weight:700;color:var(--success);">47%</div>
+            <div style="font-size:12px;color:var(--gray-400);">341,854人</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--primary-light);border-radius:8px;">
+          <span style="font-size:28px;">💼</span>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);">工作日搜索（跨场景）</div>
+            <div style="font-size:28px;font-weight:700;color:var(--primary);">46%</div>
+            <div style="font-size:12px;color:var(--gray-400);">332,558人</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--secondary-light);border-radius:8px;">
+          <span style="font-size:28px;">🎉</span>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);">节假日搜索（潜在需求）</div>
+            <div style="font-size:28px;font-weight:700;color:var(--secondary);">6%</div>
+            <div style="font-size:12px;color:var(--gray-400);">46,102人</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <p style="font-size:15px;font-weight:600;color:var(--gray-900);margin-bottom:16px;">📊 三大假设拆解</p>
+    <div class="grid-3">
+      <div class="card" style="border:2px solid #bbf7d0;background:var(--success-light);box-shadow:none;margin-bottom:0;">
+        <div style="font-size:20px;margin-bottom:8px;">✅ 假设A：平台没抓住</div>
+        <p style="font-size:13px;color:var(--gray-600);line-height:1.6;">
+          <strong>支持证据：</strong>6%（46K人）有节假日搜索但无订单，说明存在<strong>节假日搜索流失</strong>。
+          周末用户的搜索→成单能力在假日时段被削弱（可能受价格/库存影响）。
+        </p>
+      </div>
+      <div class="card" style="border:2px solid #bfdbfe;background:var(--primary-light);box-shadow:none;margin-bottom:0;">
+        <div style="font-size:20px;margin-bottom:8px;">⚠️ 假设B：需求错位</div>
+        <p style="font-size:13px;color:var(--gray-600);line-height:1.6;">
+          <strong>潜在解释：</strong>周末微度假用户<strong>偏好近郊/本地</strong>，而节假日期间热门目的地价格高企、体验差（人多），导致用户<strong>主动回避</strong>节假日出行。
+        </p>
+      </div>
+      <div class="card" style="border:2px solid #fed7aa;background:var(--secondary-light);box-shadow:none;margin-bottom:0;">
+        <div style="font-size:20px;margin-bottom:8px;">❓ 假设C：工作日隐含需求</div>
+        <p style="font-size:13px;color:var(--gray-600);line-height:1.6;">
+          <strong>值得注意：</strong>这批"纯周末"用户中，<strong>46%在12月搜索过工作日入住</strong>，远超预期——可能是节前/节后补单行为，或入住日期标记为平日的"小长假"。
+        </p>
+      </div>
+    </div>
+
+    <div class="insight-bar green" style="margin-top:20px;margin-bottom:0;">
+      <strong>策略建议：</strong>
+      <br>① <strong>节假日前3-7天提前推送</strong>：针对有节假日搜索记录但未成单的周末用户，在下一个假期前主动推送适合周末风格的近郊/亲子酒店；
+      <br>② <strong>节假日平价套餐</strong>：该群体对节假日高价敏感，可推"错峰假期包"（假期前一天入住+假期后一天离店），规避高峰价格；
+      <br>③ <strong>周末→节假日迁移培育</strong>：通过已有周末偏好酒店的同类推荐（"喜欢的酒店·节假日特供房"），降低决策门槛。
+    </div>
+  </div>
+
+  <!-- Section3 Summary -->
+  <div class="summary-box green">
+    <h3>📋 非单次纯周末用户综合洞察</h3>
+    <ul>
+      <li>6%的人有节假日搜索但零成单，明确存在<strong>节假日漏接问题</strong>，不是纯粹没需求；</li>
+      <li>46%搜索过工作日入住，说明这批"纯周末"用户的<strong>实际需求边界比标签更宽</strong>；</li>
+      <li>节假日流失的核心矛盾可能是<strong>价格贵 + 人多 + 推荐内容与偏好不匹配</strong>；</li>
+      <li>破局点：提前触达 + 近郊/亲子品类精准推送 + 节假日错峰价格机制。</li>
+    </ul>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ── 工具函数 ──
+function initChart(id) {
+  return echarts.init(document.getElementById(id), null, { renderer: 'svg' });
+}
+
+// ── Q1 用户类型分布堆叠柱状图 ──
+(function() {
+  var chart = initChart('chart_q1_type');
+  chart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: function(params) {
+      var r = params[0].axisValue + '<br/>';
+      params.forEach(function(p) { r += p.marker + p.seriesName + ': ' + p.value + '%<br/>'; });
+      return r;
+    }},
+    legend: { bottom: 0, textStyle: { fontSize: 11 }, icon: 'roundRect' },
+    grid: { left: 40, right: 10, top: 10, bottom: 40 },
+    xAxis: { type: 'category', data: ['2023', '2024', '2026', '历史合计'], axisLabel: { fontSize: 11 } },
+    yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 10 } },
+    series: [
+      { name: '商旅复用型', type: 'bar', stack: 'total', data: [48.28, 49.99, 50.37, 74.64], color: '#1a56db', barMaxWidth: 50 },
+      { name: '周末微度假型', type: 'bar', stack: 'total', data: [17.16, 15.21, 16.81, 6.15], color: '#7c3aed', barMaxWidth: 50 },
+      { name: '节假日爆发型', type: 'bar', stack: 'total', data: [4.43, 4.21, 9.87, 2.20], color: '#f97316', barMaxWidth: 50 },
+      { name: '复合场景用户', type: 'bar', stack: 'total', data: [30.13, 30.59, 22.95, 17.00], color: '#9ca3af', barMaxWidth: 50 }
+    ]
+  });
+})();
+
+// ── Q2 场景占比趋势 ──
+(function() {
+  var chart = initChart('chart_q2_scene');
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, textStyle: { fontSize: 11 }, icon: 'roundRect' },
+    grid: { left: 40, right: 10, top: 10, bottom: 40 },
+    xAxis: { type: 'category', data: ['2023', '2024', '2026', '合计'], axisLabel: { fontSize: 11 } },
+    yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 10 } },
+    series: [
+      { name: '工作日', type: 'bar', data: [64.1, 65.7, 62.7, 79.6], color: '#1a56db', barMaxWidth: 40 },
+      { name: '周末', type: 'bar', data: [28.1, 26.1, 23.9, 15.3], color: '#7c3aed', barMaxWidth: 40 },
+      { name: '节假日', type: 'bar', data: [7.8, 8.2, 13.4, 5.2], color: '#f97316', barMaxWidth: 40 }
+    ]
+  });
+})();
+
+// ── Q3 压屏对比 ──
+(function() {
+  var chart = initChart('chart_q3_yaping');
+  chart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 100, right: 60, top: 10, bottom: 30 },
+    xAxis: { type: 'value', axisLabel: { formatter: '{value}次', fontSize: 10 }, max: 6 },
+    yAxis: { type: 'category', data: ['商旅复用型', '周末微度假型', '节假日爆发型'], axisLabel: { fontSize: 12 } },
+    series: [
+      {
+        name: '人均月压屏次数', type: 'bar',
+        data: [
+          { value: 4.0, itemStyle: { color: '#1a56db' } },
+          { value: 4.6, itemStyle: { color: '#7c3aed' } },
+          { value: 4.8, itemStyle: { color: '#f97316' } }
+        ],
+        label: { show: true, position: 'right', formatter: '{c}次', fontSize: 12, fontWeight: 600 },
+        barMaxWidth: 28
+      }
+    ]
+  });
+})();
+
+// ── Q4 常住地城级分布 ──
+(function() {
+  var chart = initChart('chart_q4_city_level');
+  chart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}万人 ({d}%)' },
+    legend: { bottom: 0, textStyle: { fontSize: 11 }, icon: 'roundRect', orient: 'horizontal' },
+    series: [{
+      type: 'pie', radius: ['40%', '65%'],
+      center: ['50%', '45%'],
+      label: { show: false },
+      emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold' } },
+      data: [
+        { value: 49.9, name: '一线城市 11.74%', itemStyle: { color: '#1a56db' } },
+        { value: 100.6, name: '新一线 23.67%', itemStyle: { color: '#3b82f6' } },
+        { value: 80.0, name: '二线 18.83%', itemStyle: { color: '#7c3aed' } },
+        { value: 78.3, name: '三线 18.41%', itemStyle: { color: '#a855f7' } },
+        { value: 61.8, name: '四线 14.53%', itemStyle: { color: '#f97316' } },
+        { value: 51.2, name: '五线 12.04%', itemStyle: { color: '#fb923c' } },
+        { value: 3.4, name: '六线 0.79%', itemStyle: { color: '#9ca3af' } }
+      ]
+    }]
+  });
+})();
+
+// ── Sec2 Q2 回访分布 ──
+(function() {
+  var chart = initChart('chart_q2_revisit');
+  chart.setOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: function(p) {
+      return p[0].axisValue + '<br/>' + p[0].marker + p[0].seriesName + ': ' + (p[0].value/10000).toFixed(0) + '万人 (' + p[1].value + '%)';
+    }},
+    legend: { show: false },
+    grid: { left: 60, right: 60, top: 10, bottom: 30 },
+    xAxis: { type: 'category', data: ['未回访','1天','2天','3天','4天','5天','5天+'], axisLabel: { fontSize: 10 } },
+    yAxis: [
+      { type: 'value', axisLabel: { formatter: function(v){ return (v/10000).toFixed(0)+'万'; }, fontSize: 10 } },
+      { type: 'value', axisLabel: { formatter: '{value}%', fontSize: 10 }, max: 60 }
+    ],
+    series: [
+      { name: '用户数', type: 'bar', data: [8493722, 3193383, 1704497, 1019440, 650956, 433807, 1253851],
+        itemStyle: { color: function(p){ return p.dataIndex === 0 ? '#9ca3af' : '#f97316'; } }, barMaxWidth: 35 },
+      { name: '占比', type: 'line', yAxisIndex: 1, data: [50.7, 19.1, 10.2, 6.1, 3.9, 2.6, 7.5],
+        symbol: 'circle', symbolSize: 5, lineStyle: { color: '#1a56db', width: 2 }, itemStyle: { color: '#1a56db' } }
+    ]
+  });
+})();
+
+// ── Sec2 Q2 累计回访曲线 ──
+(function() {
+  var chart = initChart('chart_q2_revisit_cum');
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    grid: { left: 40, right: 10, top: 10, bottom: 30 },
+    xAxis: { type: 'category', data: ['7日内', '1月内', '2月内', '4月内'], axisLabel: { fontSize: 11 } },
+    yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 10 } },
+    series: [{
+      type: 'line', data: [35.4, 59.1, 73.0, 87.5],
+      symbol: 'circle', symbolSize: 8,
+      lineStyle: { color: '#f97316', width: 3 }, itemStyle: { color: '#f97316' },
+      areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+        colorStops: [{ offset: 0, color: 'rgba(249,115,22,0.3)' }, { offset: 1, color: 'rgba(249,115,22,0)' }] } },
+      label: { show: true, formatter: '{c}%', fontSize: 12, fontWeight: 600, color: '#f97316' }
+    }]
+  });
+})();
+
+// ── Sec2 Q3 连住周末饼图 ──
+(function() {
+  var chart = initChart('chart_q3_extend');
+  chart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}万次 ({d}%)' },
+    series: [{
+      type: 'pie', radius: ['45%', '70%'],
+      center: ['50%', '50%'],
+      label: { fontSize: 13, fontWeight: 600 },
+      data: [
+        { value: 15396, name: '未连住至周末 92%', itemStyle: { color: '#9ca3af' } },
+        { value: 1369, name: '连住至周末 8%', itemStyle: { color: '#f97316' } }
+      ]
+    }]
+  });
+})();
+
+// ── Sec3 周末用户搜索场景 ──
+(function() {
+  var chart = initChart('chart_sec3_scene');
+  chart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}万人 ({d}%)' },
+    series: [{
+      type: 'pie', radius: ['40%', '68%'],
+      center: ['50%', '48%'],
+      label: { formatter: '{b}\n{c}万人', fontSize: 12 },
+      data: [
+        { value: 34.2, name: '周末 47%', itemStyle: { color: '#16a34a' } },
+        { value: 33.3, name: '工作日 46%', itemStyle: { color: '#1a56db' } },
+        { value: 4.6, name: '节假日 6%', itemStyle: { color: '#f97316' } }
+      ]
+    }]
+  });
+})();
+
+window.addEventListener('resize', function() {
+  ['chart_q1_type','chart_q2_scene','chart_q3_yaping','chart_q4_city_level',
+   'chart_q2_revisit','chart_q2_revisit_cum','chart_q3_extend','chart_sec3_scene']
+  .forEach(function(id) {
+    var c = echarts.getInstanceByDom(document.getElementById(id));
+    if (c) c.resize();
+  });
+});
+
+// TOC active tracking
+document.querySelectorAll('.toc-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.toc-item').forEach(function(i) { i.classList.remove('active'); });
+    item.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
